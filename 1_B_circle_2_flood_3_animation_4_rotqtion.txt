@@ -1,0 +1,371 @@
+cg.cpp
+
+
+//for bresenham circle
+
+#include <GL/glut.h>
+#include <cmath>
+
+// Window size
+int windowWidth = 800;
+int windowHeight = 800;
+
+// Circle parameters
+int radius = 100;
+
+// Set a single pixel
+void setPixel(int x, int y) {
+    glBegin(GL_POINTS);
+    glVertex2i(x, y);
+    glEnd();
+}
+
+// Draw a cross centered at (x, y)
+void drawCross(int x, int y) {
+    setPixel(x, y);
+    setPixel(x + 1, y);
+    setPixel(x - 1, y);
+    setPixel(x, y + 1);
+    setPixel(x, y - 1);
+}
+
+// Draw all 8 symmetrical points of the circle
+void plotCirclePoints(int xc, int yc, int x, int y) {
+    drawCross(xc + x, yc + y);
+    drawCross(xc - x, yc + y);
+    drawCross(xc + x, yc - y);
+    drawCross(xc - x, yc - y);
+    drawCross(xc + y, yc + x);
+    drawCross(xc - y, yc + x);
+    drawCross(xc + y, yc - x);
+    drawCross(xc - y, yc - x);
+}
+
+// Bresenham Circle Drawing
+void drawCircle(int xc, int yc, int r) {
+    int x = 0;
+    int y = r;
+    int p = 3 - 2 * r;
+
+    while (x <= y) {
+        plotCirclePoints(xc, yc, x, y);
+
+        if (p < 0)
+            p = p + 4 * x + 6;
+        else {
+            p = p + 4 * (x - y) + 10;
+            y--;
+        }
+        x++;
+    }
+}
+
+// Draw quadrant axes
+void drawAxes() {
+    glColor3f(0.7, 0.7, 0.7); // gray color
+
+    for (int i = -windowWidth / 2; i <= windowWidth / 2; i++) {
+        setPixel(i, 0); // X-axis
+        setPixel(0, i); // Y-axis
+    }
+}
+
+// Display callback
+void display() {
+    glClear(GL_COLOR_BUFFER_BIT); // Clear screen
+    drawAxes();                   // Draw X and Y axis
+
+    glColor3f(0.0, 0.0, 1.0);     // Blue cross objects
+    drawCircle(0, 0, radius);     // Draw circle centered at origin
+
+    glFlush(); // Render now
+}
+
+// Initialization
+void init() {
+    glClearColor(1, 1, 1, 1); // White background
+    gluOrtho2D(-windowWidth / 2, windowWidth / 2, -windowHeight / 2, windowHeight / 2);
+    glPointSize(2.0);
+}
+
+// Main function
+int main(int argc, char** argv) {
+    glutInit(&argc, argv);                                  // Initialize GLUT
+    glutInitDisplayMode(GLUT_SINGLE | GLUT_RGB);            // Single buffering, RGB color
+    glutInitWindowSize(windowWidth, windowHeight);          // Window size
+    glutInitWindowPosition(100, 100);                       // Window position
+    glutCreateWindow("Bresenham Circle with Object");       // Window title
+
+    init();                 // OpenGL setup
+    glutDisplayFunc(display); // Register display callback
+    glutMainLoop();         // Enter main loop
+
+    return 0;
+}
+
+
+
+
+
+
+
+//for filling
+
+
+
+
+#include <GL/glut.h>
+#include <iostream>
+
+const int width = 640;
+const int height = 480;
+
+// Set pixel at (x, y) with color
+void setPixel(int x, int y, float r, float g, float b) {
+    glColor3f(r, g, b);
+    glBegin(GL_POINTS);
+    glVertex2i(x, y);
+    glEnd();
+    glFlush();
+}
+
+// Get color at pixel (x, y)
+void getPixelColor(int x, int y, float* color) {
+    glReadPixels(x, y, 1, 1, GL_RGB, GL_FLOAT, color);
+}
+
+// Flood Fill (4-connected)
+void floodFill4(int x, int y, float* fillColor, float* targetColor) {
+    float color[3];
+    getPixelColor(x, y, color);
+
+    if (color[0] == targetColor[0] &&
+        color[1] == targetColor[1] &&
+        color[2] == targetColor[2]) {
+
+        setPixel(x, y, fillColor[0], fillColor[1], fillColor[2]);
+
+        floodFill4(x + 1, y, fillColor, targetColor);
+        floodFill4(x - 1, y, fillColor, targetColor);
+        floodFill4(x, y + 1, fillColor, targetColor);
+        floodFill4(x, y - 1, fillColor, targetColor);
+    }
+}
+
+// Draw a closed square polygon
+void drawPolygon() {
+    glColor3f(1, 0, 0); // Red boundary
+    glBegin(GL_LINE_LOOP);
+    glVertex2i(200, 200);
+    glVertex2i(300, 200);
+    glVertex2i(300, 300);
+    glVertex2i(200, 300);
+    glEnd();
+    glFlush();
+}
+
+// Mouse callback
+void mouse(int button, int state, int x, int y) {
+    if (button == GLUT_LEFT_BUTTON && state == GLUT_DOWN) {
+        float fillColor[3] = {0.0f, 1.0f, 0.0f}; // Green
+        float targetColor[3];
+
+        y = height - y; // Flip y-axis for OpenGL coordinates
+        getPixelColor(x, y, targetColor);
+
+        floodFill4(x, y, fillColor, targetColor);
+    }
+}
+
+// Display function
+void display() {
+    glClear(GL_COLOR_BUFFER_BIT);
+    drawPolygon();
+}
+
+// Initialization
+void init() {
+    glClearColor(1, 1, 1, 1); // White background
+    glMatrixMode(GL_PROJECTION);
+    gluOrtho2D(0, width, 0, height);
+    glPointSize(1);
+}
+
+int main(int argc, char** argv) {
+    glutInit(&argc, argv);
+    glutInitDisplayMode(GLUT_SINGLE | GLUT_RGB);
+    glutInitWindowSize(width, height);
+    glutInitWindowPosition(100, 100);
+    glutCreateWindow("Flood Fill Only");
+
+    init();
+
+    glutDisplayFunc(display);
+    glutMouseFunc(mouse);
+    glutMainLoop();
+
+    return 0;
+}
+
+
+
+
+// animetion
+
+#include <GL/glut.h>
+#include <cmath>
+
+float ballX = 250, ballY = 400;    // Ball position
+float velocityY = 0;               // Vertical velocity
+float gravity = -0.5;              // Gravity
+float radius = 20;                // Ball radius
+float floorY = 50;                 // Ground level
+float squash = 1.0;                // Stretch/squash factor
+
+void display() {
+    glClear(GL_COLOR_BUFFER_BIT);
+
+    // Draw the floor
+    glColor3f(0.3, 0.3, 0.3);
+    glBegin(GL_LINES);
+        glVertex2f(0, floorY);
+        glVertex2f(500, floorY);
+    glEnd();
+
+    // Draw the ball
+    glPushMatrix();
+        glTranslatef(ballX, ballY, 0);
+        glScalef(1.0, squash, 1.0);  // squash/stretch effect
+        glColor3f(1, 0, 0);
+        glutSolidSphere(radius, 50, 50);
+    glPopMatrix();
+
+    glutSwapBuffers();
+}
+
+void update(int value) {
+    // Update position and velocity
+    velocityY += gravity;
+    ballY += velocityY;
+
+    // Bounce
+    if (ballY - radius <= floorY) {
+        ballY = floorY + radius;
+        velocityY = -velocityY * 0.8; // Damping
+
+        // Apply squash/stretch
+        squash = 0.6;
+    } else {
+        // Ease out squash
+        if (squash < 1.0)
+            squash += 0.05;
+    }
+
+    glutPostRedisplay();
+    glutTimerFunc(16, update, 0);  // Call update ~60 times per second
+}
+
+void init() {
+    glClearColor(1, 1, 1, 1);
+    glMatrixMode(GL_PROJECTION);
+    gluOrtho2D(0, 500, 0, 500);
+}
+
+int main(int argc, char** argv) {
+    glutInit(&argc, argv);
+    glutInitDisplayMode(GLUT_DOUBLE | GLUT_RGB);
+    glutInitWindowSize(500, 500);
+    glutCreateWindow("Bouncing Ball Animation");
+
+    init();
+    glutDisplayFunc(display);
+    glutTimerFunc(0, update, 0);
+
+    glutMainLoop();
+    return 0;
+}
+
+
+
+//rotaton 
+
+
+#include <GL/glut.h>
+#include <iostream>
+#include <cmath>
+
+using namespace std;
+
+float triangle[3][2] = {{100, 100}, {150, 200}, {200, 100}}; // Triangle points
+float pivotX = 150, pivotY = 150; // Arbitrary point for rotation/scaling
+
+void drawPolygon() {
+    glColor3f(0.0, 0.0, 1.0); // Blue
+    glBegin(GL_LINE_LOOP);
+    for (int i = 0; i < 3; ++i)
+        glVertex2f(triangle[i][0], triangle[i][1]);
+    glEnd();
+}
+
+void applyScaling(float sx, float sy) {
+    for (int i = 0; i < 3; i++) {
+        triangle[i][0] = pivotX + (triangle[i][0] - pivotX) * sx;
+        triangle[i][1] = pivotY + (triangle[i][1] - pivotY) * sy;
+    }
+    glutPostRedisplay();
+}
+
+void applyRotation(float angleDegrees) {
+    float angleRad = angleDegrees * 3.1416 / 180;
+    for (int i = 0; i < 3; i++) {
+        float x = triangle[i][0] - pivotX;
+        float y = triangle[i][1] - pivotY;
+
+        float xNew = x * cos(angleRad) - y * sin(angleRad);
+        float yNew = x * sin(angleRad) + y * cos(angleRad);
+
+        triangle[i][0] = pivotX + xNew;
+        triangle[i][1] = pivotY + yNew;
+    }
+    glutPostRedisplay();
+}
+
+void display() {
+    glClear(GL_COLOR_BUFFER_BIT);
+    drawPolygon();
+    glFlush();
+}
+
+void keyboard(unsigned char key, int, int) {
+    switch (key) {
+        case 's': // Scale by 1.5x
+            applyScaling(1.5, 1.5);
+            break;
+        case 'r': // Rotate 45 degrees
+            applyRotation(45);
+            break;
+        case 27: // ESC key
+            exit(0);
+    }
+}
+
+void init() {
+    glClearColor(1, 1, 1, 1); // White background
+    glColor3f(0, 0, 1);       // Blue color
+    gluOrtho2D(0, 500, 0, 500);
+}
+
+int main(int argc, char** argv) {
+    glutInit(&argc, argv);
+    glutInitDisplayMode(GLUT_SINGLE | GLUT_RGB);
+    glutInitWindowSize(600, 600);
+    glutInitWindowPosition(100, 100);
+    glutCreateWindow("Scaling and Rotation about Arbitrary Point");
+
+    init();
+    glutDisplayFunc(display);
+    glutKeyboardFunc(keyboard);
+    glutMainLoop();
+    return 0;
+}
+

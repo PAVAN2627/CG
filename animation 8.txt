@@ -1,0 +1,55 @@
+#include <iostream>
+#include <GL/glut.h>
+using namespace std;
+
+int x = 0;
+bool flag = false;
+
+void init() {
+    glClearColor(1.0, 1.0, 1.0, 0.0); // Set background color to white
+    glMatrixMode(GL_PROJECTION);
+    gluOrtho2D(0, 640, 0, 480); // Set the coordinate system
+}
+
+void object1() {
+    glClear(GL_COLOR_BUFFER_BIT);
+
+    // Draw a red rectangle
+    glColor3f(1.0, 0.0, 0.0);
+    glBegin(GL_POLYGON);
+    glVertex2i(x, 220);
+    glVertex2i(x + 40, 220);
+    glVertex2i(x + 40, 260);
+    glVertex2i(x, 260);
+    glEnd();
+
+    glutSwapBuffers(); // Use double buffering
+}
+
+void timer(int) {
+    // Update position
+    if (!flag) {
+        x += 3;
+        if (x >= 600) flag = true;
+    } else {
+        x -= 3;
+        if (x <= 0) flag = false;
+    }
+
+    glutPostRedisplay(); // Redraw the screen
+    glutTimerFunc(1000 / 60, timer, 0); // Call timer again after ~16.67ms
+}
+
+int main(int argc, char** argv) {
+    glutInit(&argc, argv);
+    glutInitDisplayMode(GLUT_DOUBLE | GLUT_RGB);
+    glutInitWindowSize(640, 480);
+    glutInitWindowPosition(200, 200);
+    glutCreateWindow("Smooth Rectangle Animation");
+
+    init();
+    glutDisplayFunc(object1);
+    glutTimerFunc(0, timer, 0); // Start timer immediately
+    glutMainLoop();
+    return 0;
+}
